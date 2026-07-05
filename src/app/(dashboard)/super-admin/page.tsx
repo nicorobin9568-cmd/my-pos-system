@@ -2,15 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { CheckCircle, XCircle, Clock, Store } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Store, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { BUSINESS_TYPE_LABELS, formatDate } from '@/lib/utils';
-import type { Tenant } from '@/types';
+import type { Tenant, BusinessType } from '@/types';
 
 export default function SuperAdminPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'suspended'>('pending');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'suspended'>('all');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newShop, setNewShop] = useState({
+    shopName: '',
+    businessType: 'general' as BusinessType,
+  });
 
   const fetchTenants = async () => {
     const supabase = createClient();
@@ -25,6 +30,26 @@ export default function SuperAdminPage() {
     fetchTenants();
   }, [filter]);
 
+  const handleAddShop = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const supabase = createClient();
+    const { error } = await supabase.from('tenants').insert({
+      shop_name: newShop.shopName,
+      business_type: newShop.businessType,
+      status: 'approved',
+    });
+
+    if (error) {
+      toast.error('ဆိုင်ဆောက်ခြင်း မအောင်မြင်ပါ');
+      return;
+    }
+
+    toast.success('ဆိုင်အသစ် ဆောက်ပြီးပါပြီ');
+    setShowAddModal(false);
+    setNewShop({ shopName: '', businessType: 'general' });
+    fetchTenants();
+  };
+
   const updateStatus = async (tenantId: string, status: 'approved' | 'suspended' | 'pending') => {
     const supabase = createClient();
     const { error } = await supabase
@@ -37,7 +62,6 @@ export default function SuperAdminPage() {
       return;
     }
 
-    // Also update shop_admin profile status
     if (status === 'approved') {
       await supabase
         .from('profiles')
@@ -65,14 +89,22 @@ export default function SuperAdminPage() {
 
   return (
     <div className="p-4">
-      <div className="flex items-center gap-2 mb-4">
-        <Store className="w-6 h-6 text-emerald-600" />
-        <h2 className="text-xl font-bold text-gray-900">ဆိုင်များ စီမံခန့်ခွဲရန်</h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Store className="w-6 h-6 text-emerald-600" />
+          <h2 className="text-xl font-bold text-gray-900">ဆိုင်များ စီမံခန့်ခွဲရန်</h2>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="bg-emerald-500 text-white p-2 rounded-full shadow-lg hover:bg-emerald-600 transition-colors"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-        {(['pending', 'approved', 'suspended', 'all'] as const).map((f) => (
+        {(['all', 'pending', 'approved', 'suspended'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -138,6 +170,54 @@ export default function SuperAdminPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Add Shop Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4">ဆိုင်အသစ်ဆောက်ရန်</h3>
+            <form onSubmit={handleAddShop} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">ဆိုင်အမည်</label>
+                <input
+                  type="text"
+                  required
+                  value={newShop.shopName}
+                  onChange={(e) => setNewShop({ ...newShop, shopName: e.target.value })}
+                  className="w-full border rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">ဆိုင်အမျိုးအစား</label>
+                <select
+                  value={newShop.businessType}
+                  onChange={(e) => setNewShop({ ...newShop, businessType: e.target.value as BusinessType })}
+                  className="w-full border rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                >
+                  {Object.entries(BUSINESS_TYPE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 py-2 border rounded-xl font-medium"
+                >
+                  မလုပ်တော့ပါ
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 bg-emerald-500 text-white rounded-xl font-medium"
+                >
+                  ဆောက်မည်
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

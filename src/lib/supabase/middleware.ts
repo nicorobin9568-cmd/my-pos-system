@@ -25,21 +25,8 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const pathname = request.nextUrl.pathname;
-  const isAuthPage =
-    pathname.startsWith('/login') ||
-    pathname.startsWith('/signup') ||
-    pathname.startsWith('/cashier-signup');
-
-  if (!user && !isAuthPage) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
-  }
+  // IMPORTANT: Just refresh the session, don't do redirects here to avoid loops with page.tsx
+  await supabase.auth.getUser();
 
   return supabaseResponse;
 }
