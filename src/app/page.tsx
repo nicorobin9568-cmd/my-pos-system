@@ -8,7 +8,7 @@ export default async function RootPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login');
+    return redirect('/login');
   }
 
   const { data: profile } = await supabase
@@ -18,21 +18,22 @@ export default async function RootPage() {
     .single();
 
   if (!profile) {
-    redirect('/login');
+    // If auth user exists but profile doesn't, something is wrong, back to login
+    return redirect('/login');
   }
 
   if (profile.status === 'pending') {
-    redirect('/pending-approval');
+    return redirect('/pending-approval');
   }
 
-  switch (profile.role) {
-    case 'super_admin':
-      redirect('/super-admin');
-    case 'shop_admin':
-      redirect('/shop-admin');
-    case 'cashier':
-      redirect('/cashier/pos');
-    default:
-      redirect('/login');
+  // Use absolute paths for redirects to be safe
+  if (profile.role === 'super_admin') {
+    return redirect('/super-admin');
+  } else if (profile.role === 'shop_admin') {
+    return redirect('/shop-admin');
+  } else if (profile.role === 'cashier') {
+    return redirect('/cashier/pos');
   }
+
+  return redirect('/login');
 }
