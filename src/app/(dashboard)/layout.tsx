@@ -20,10 +20,11 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single();
 
-  if (!profile || profile.status === 'pending') redirect('/pending-approval');
+  if (!profile) redirect('/login');
+  if (profile.status === 'pending') redirect('/pending-approval');
 
   return (
-    <DashboardShell profile={profile} tenant={profile.tenants}>
+    <DashboardShell profile={profile} tenant={profile.tenants || null}>
       {children}
     </DashboardShell>
   );
