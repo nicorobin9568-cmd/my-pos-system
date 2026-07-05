@@ -11,25 +11,28 @@ export default async function RootPage() {
     return redirect('/login');
   }
 
-  const { data: profile } = await supabase
+  // Fetch profile with absolute priority
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single();
 
-  if (!profile) {
-    // If auth user exists but profile doesn't, something is wrong, back to login
+  if (error || !profile) {
+    console.error('Profile fetch error:', error);
     return redirect('/login');
+  }
+
+  // Super Admin check first
+  if (profile.role === 'super_admin') {
+    return redirect('/super-admin');
   }
 
   if (profile.status === 'pending') {
     return redirect('/pending-approval');
   }
 
-  // Use absolute paths for redirects to be safe
-  if (profile.role === 'super_admin') {
-    return redirect('/super-admin');
-  } else if (profile.role === 'shop_admin') {
+  if (profile.role === 'shop_admin') {
     return redirect('/shop-admin');
   } else if (profile.role === 'cashier') {
     return redirect('/cashier/pos');
