@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function updateSession(request: NextRequest) {
+  // NO REDIRECTS IN MIDDLEWARE - This is the safest way to avoid loops
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -25,7 +26,6 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: Just refresh the session, don't do redirects here to avoid loops with page.tsx
   await supabase.auth.getUser();
 
   return supabaseResponse;
